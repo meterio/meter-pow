@@ -24,6 +24,7 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <validationinterface.h>
+#include "posapi/http.h"
 
 #include <algorithm>
 #include <queue>
@@ -177,6 +178,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
     }
     int64_t nTime2 = GetTimeMicros();
+
+    // TODO: send the block to POS
+    char *blockString;
+    blockString = "test";
+    http_send_pos(blockString);
 
     LogPrint(BCLog::BENCH, "CreateNewBlock() packages: %.2fms (%d packages, %d updated descendants), validity: %.2fms (total %.2fms)\n", 0.001 * (nTime1 - nTimeStart), nPackagesSelected, nDescendantsUpdated, 0.001 * (nTime2 - nTime1), 0.001 * (nTime2 - nTimeStart));
 
