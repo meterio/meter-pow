@@ -55,9 +55,11 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     int64_t nActualTimespan = pindexLast->GetBlockTime() - nFirstBlockTime;
     if (nActualTimespan < params.nPowTargetTimespan * 83 / 100) {
         nActualTimespan = params.nPowTargetTimespan  * 83 / 100;
+    }
     if (nActualTimespan > params.nPowTargetTimespan * 132 / 100) {
         nActualTimespan = params.nPowTargetTimespan * 132 / 100;
-
+    }
+    
     // Retarget
     const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
     arith_uint256 bnNew;
