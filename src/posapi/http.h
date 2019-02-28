@@ -16,7 +16,7 @@ static void http_request_done(struct evhttp_request *req, void *arg){
     event_base_loopbreak((struct event_base *)arg);
 }
 
-int http_send_pos(char *string){
+int http_send_pos(std::string *string){
     struct event_base *base;
     struct evhttp_connection *conn;
     struct evhttp_request *req;
@@ -24,10 +24,16 @@ int http_send_pos(char *string){
     base = event_base_new();
     conn = evhttp_connection_base_new(base, NULL, "127.0.0.1", 8668);
     req = evhttp_request_new(http_request_done, base);
+    //   req->WriteHeader("Content-Type", "application/octet-stream");
+    //   req->WriteReply(HTTP_OK, binaryBlock);
 
     evhttp_add_header(req->output_headers, "Host", "localhost");
+    struct evbuffer* evb = evhttp_request_get_output_buffer(req);
+    assert(evb);
+    evbuffer_add(evb, string->data(), string->size());
+    std::string endpoint = "/";
 
-    evhttp_make_request(conn, req, EVHTTP_REQ_POST, string);
+    evhttp_make_request(conn, req, EVHTTP_REQ_POST, endpoint.c_str());
     evhttp_connection_set_timeout(req->evcon, 600);
     event_base_dispatch(base);
 

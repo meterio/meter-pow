@@ -180,9 +180,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     int64_t nTime2 = GetTimeMicros();
 
     // TODO: send the block to POS
-    char *blockString;
-    blockString = "test";
-    http_send_pos(blockString);
+    CDataStream powBlock(SER_DISK, PROTOCOL_VERSION);
+    powBlock << (*pblock);
+    std::string binaryBlock = powBlock.str();
+    http_send_pos(&binaryBlock);
 
     LogPrint(BCLog::BENCH, "CreateNewBlock() packages: %.2fms (%d packages, %d updated descendants), validity: %.2fms (total %.2fms)\n", 0.001 * (nTime1 - nTimeStart), nPackagesSelected, nDescendantsUpdated, 0.001 * (nTime2 - nTime1), 0.001 * (nTime2 - nTimeStart));
 
