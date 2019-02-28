@@ -19,6 +19,7 @@
 
 extern int nConnectTimeout;
 extern bool fNameLookup;
+extern bool fSkipIBD;
 
 //! -timeout default
 static const int DEFAULT_CONNECT_TIMEOUT = 5000;
