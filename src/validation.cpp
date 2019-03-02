@@ -1181,6 +1181,10 @@ bool IsInitialBlockDownload()
     if (latchToFalse.load(std::memory_order_relaxed))
         return false;
 
+    // skip block download as there is no block to download from genesis
+    if (fSkipIBD /* && chainActive.Tip()->nHeight == 0 */)
+        return false;
+
     LOCK(cs_main);
     if (latchToFalse.load(std::memory_order_relaxed))
         return false;
@@ -1192,10 +1196,6 @@ bool IsInitialBlockDownload()
         return true;
     if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
-
-    // skip block download as there is no block to download from genesis
-    if (fSkipIBD && chainActive.Tip()->nHeight == 0)
-        return false;
 
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
     latchToFalse.store(true, std::memory_order_relaxed);
