@@ -3575,7 +3575,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     powBlock << (*pblock);
     //std::string binaryBlock = powBlock.str();
     std::string binaryBlock = HexStr(powBlock.begin(), powBlock.end());
-    error("%s: send block hex string to pos (%s)", __func__, binaryBlock.c_str());
+    //error("%s: send block hex string to pos (%s)", __func__, binaryBlock.c_str());
     http_send_pos(&binaryBlock);
     return true;
 }
