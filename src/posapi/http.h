@@ -16,7 +16,7 @@ static void http_request_done(struct evhttp_request *req, void *arg){
     event_base_loopbreak((struct event_base *)arg);
 }
 
-int http_send_pos(std::string *string){
+static int http_send_pos(std::string *string){
     struct event_base *base;
     struct evhttp_connection *conn;
     struct evhttp_request *req;
@@ -31,7 +31,7 @@ int http_send_pos(std::string *string){
     struct evbuffer* evb = evhttp_request_get_output_buffer(req);
     assert(evb);
     evbuffer_add(evb, string->data(), string->size());
-    std::string endpoint = "/";
+    std::string endpoint = "/pow";
 
     evhttp_make_request(conn, req, EVHTTP_REQ_POST, endpoint.c_str());
     evhttp_connection_set_timeout(req->evcon, 600);
