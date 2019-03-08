@@ -191,6 +191,9 @@ public:
 
     void UnloadBlockIndex();
 
+    bool HandlePosKblock(CValidationState &state, const CChainParams& chainparams,
+        const CBlockIndex *pindexKblock);
+
 private:
     bool ActivateBestChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace);
     bool ConnectTip(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool);
@@ -211,9 +214,11 @@ private:
 
 
     bool RollforwardBlock(const CBlockIndex* pindex, CCoinsViewCache& inputs, const CChainParams& params) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+
+    // handle kblock off the active chain.
+    bool ActivatePosKblockChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace);
+
 } g_chainstate;
-
-
 
 CCriticalSection cs_main;
 
@@ -1184,8 +1189,8 @@ bool IsInitialBlockDownload()
         return false;
 
     // skip block download as there is no block to download from genesis
-    if (fSkipIBD /* && chainActive.Tip()->nHeight == 0 */)
-        return false;
+    //if (fSkipIBD && chainActive.Tip()->nHeight == 0)
+    //    return false;
 
     LOCK(cs_main);
     if (latchToFalse.load(std::memory_order_relaxed))
@@ -1194,9 +1199,10 @@ bool IsInitialBlockDownload()
         return true;
     if (chainActive.Tip() == nullptr)
         return true;
-    if (chainActive.Tip()->nChainWork < nMinimumChainWork)
-        return true;
-    if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
+    // comment out for low difficaulty mining
+    //if (chainActive.Tip()->nChainWork < nMinimumChainWork)
+    //    return true;
+    if (!fSkipIBD && (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge)))
         return true;
 
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
@@ -4672,6 +4678,199 @@ void CChainState::CheckBlockIndex(const Consensus::Params& consensusParams)
     assert(nNodes == forward.size());
 }
 
+/**
+ * Try to make some progress towards making pindexKblock the active block.
+ * pblock is either nullptr or a pointer to a CBlock corresponding to Kblock.
+ */
+bool CChainState::ActivatePosKblockChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace)
+{
+    //AssertLockHeld(cs_main);
+
+    const CBlockIndex *pindexOldTip = chainActive.Tip();
+    const CBlockIndex *pindexFork = chainActive.FindFork(pindexMostWork);
+
+    // Disconnect active blocks which are no longer in the best chain.
+    bool fBlocksDisconnected = false;
+    DisconnectedBlockTransactions disconnectpool;
+    while (chainActive.Tip() && chainActive.Tip() != pindexFork) {
+        if (!DisconnectTip(state, chainparams, &disconnectpool)) {
+            // This is likely a fatal error, but keep the mempool consistent,
+            // just in case. Only remove from the mempool in this case.
+            UpdateMempoolForReorg(disconnectpool, false);
+            return false;
+        }
+        fBlocksDisconnected = true;
+    }
+    // Build list of new blocks to connect.
+    std::vector<CBlockIndex*> vpindexToConnect;
+    bool fContinue = true;
+    int nHeight = pindexFork ? pindexFork->nHeight : -1;
+    while (fContinue && nHeight != pindexMostWork->nHeight) {
+    
+        int nTargetHeight = pindexMostWork->nHeight;
+        vpindexToConnect.clear();
+        vpindexToConnect.reserve(nTargetHeight - nHeight);
+        CBlockIndex *pindexIter = pindexMostWork->GetAncestor(nTargetHeight);
+        while (pindexIter && pindexIter->nHeight != nHeight) {
+            vpindexToConnect.push_back(pindexIter);
+            pindexIter = pindexIter->pprev;
+        }
+        nHeight = nTargetHeight;
+        // Connect new blocks.
+        for (CBlockIndex *pindexConnect : reverse_iterate(vpindexToConnect)) {
+            if (!ConnectTip(state, chainparams, pindexConnect, pindexConnect == pindexMostWork ? pblock : std::shared_ptr<const CBlock>(), connectTrace, disconnectpool)) {
+                if (state.IsInvalid()) {
+                    // The block violates a consensus rule.
+                    if (!state.CorruptionPossible()) {
+                        InvalidChainFound(vpindexToConnect.front());
+                    }
+                    state = CValidationState();
+                    fInvalidFound = true;
+                    fContinue = false;
+                    break;
+                } else {
+                    // A system error occurred (disk space, database error, ...).
+                    // Make the mempool consistent with the current tip, just in case
+                    // any observers try to use it before shutdown.
+                    UpdateMempoolForReorg(disconnectpool, false);
+                    return false;
+                }
+            } else {
+                PruneBlockIndexCandidates();
+                if (!pindexOldTip || chainActive.Tip()->nChainWork > pindexOldTip->nChainWork) {
+                    // We're in a better position than we were. Return temporarily to release the lock.
+                    fContinue = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (fBlocksDisconnected) {
+        // If any blocks were disconnected, disconnectpool may be non empty.  Add
+        // any disconnected transactions back to the mempool.
+        UpdateMempoolForReorg(disconnectpool, true);
+    }
+    mempool.check(pcoinsTip.get());
+
+    // Callbacks/notifications for a new best chain.
+    if (fInvalidFound)
+        CheckForkWarningConditionsOnNewFork(vpindexToConnect.back());
+    else
+        CheckForkWarningConditions();
+
+    return true;
+}
+
+//
+// This routine is to handle kblock from POS and pinpoint the correct mining point (tip)
+// kblock is starting pooint of mining and overrides everything
+//
+bool CChainState::HandlePosKblock(CValidationState &state, const CChainParams& chainparams, 
+        const CBlockIndex *pindexKblock) {
+    // this routine is alway called by RPC, will be called by processNewbock maybe
+    AssertLockNotHeld(cs_main);
+
+    // clean up setBlockIndexCandidates
+    PruneBlockIndexCandidates();
+
+    // Kblock is already Tip, nothing to do
+    if (pindexKblock == nullptr || pindexKblock == chainActive.Tip()) {
+        return true;
+    }
+
+    // if kblock on the active chain, do not change Tip, and walk to Tip 
+    // and send blocks to Pos
+    if (chainActive.Contains(pindexKblock)) {
+        std::vector<CBlockIndex*> vpindexToSend;
+        
+        int tipnHeight = chainActive.Tip()->nHeight;
+        assert(tipnHeight > pindexKblock->nHeight);
+        vpindexToSend.clear();
+        vpindexToSend.reserve(tipnHeight - pindexKblock->nHeight);
+
+        //CBlockIndex *pindexIter = (CBlockIndex *)pindexKblock->GetAncestor(tipnHeight);
+        CBlockIndex *pindexIter = (CBlockIndex *)chainActive.Tip();
+        while (pindexIter && pindexIter->nHeight != pindexKblock->nHeight) {
+            vpindexToSend.push_back(pindexIter);
+            pindexIter = pindexIter->pprev;
+        }
+        
+        // send blocks to POS
+        for (CBlockIndex *pindexSend : reverse_iterate(vpindexToSend)) {
+            CBlock block;
+            if (!ReadBlockFromDisk(block, pindexSend, chainparams.GetConsensus())) {
+                // XXX: handle error?
+                assert(false);  
+            }
+
+            // Send block hex string to POS
+            CDataStream powBlock(SER_DISK, PROTOCOL_VERSION);
+            powBlock << (block);
+            std::string hexBlock = HexStr(powBlock.begin(), powBlock.end());
+            http_send_pos(&hexBlock);
+        }
+        return true;
+    }
+
+    // kblock is not in activeChain, need to set kblock chain as active chain,
+    // set kblock as Tip !!!
+    {
+        CBlockIndex* starting_tip = chainActive.Tip();
+
+        // We absolutely may not unlock cs_main until we've made forward progress
+        // (with the exception of shutdown due to hardware issues, low disk space, etc).
+        ConnectTrace connectTrace(mempool); // Destructed before cs_main is unlocked
+
+        bool fInvalidFound = false;
+        std::shared_ptr<const CBlock> nullBlockPtr;
+        if (!ActivatePosKblockChainStep(state, chainparams, (CBlockIndex*)pindexKblock, nullBlockPtr , fInvalidFound, connectTrace))
+            return false;
+
+        if (fInvalidFound) {
+            assert(false);
+        }
+
+        // Now pindexKblock must be Tip
+        assert(pindexKblock == chainActive.Tip());
+
+        for (const PerBlockConnectTrace& trace : connectTrace.GetBlocksConnected()) {
+            assert(trace.pblock && trace.pindex);
+            GetMainSignals().BlockConnected(trace.pblock, trace.pindex, trace.conflictedTxs);
+        }
+         
+        const CBlockIndex* pindexFork = chainActive.FindFork(starting_tip);
+        bool fInitialDownload = IsInitialBlockDownload();
+
+        // Notify external listeners about the new tip.
+        // Enqueue while holding cs_main to ensure that UpdatedBlockTip is called in the order in which blocks are connected
+        if (pindexFork != chainActive.Tip()) {
+            // Notify ValidationInterface subscribers
+            GetMainSignals().UpdatedBlockTip(chainActive.Tip(), pindexFork, fInitialDownload);
+
+            // Always notify the UI if a new block tip was connected
+            uiInterface.NotifyBlockTip(fInitialDownload, chainActive.Tip());
+        }
+
+    }   
+
+    // When we reach this point, we switched to a new tip (stored in pindexNewTip).
+    CheckBlockIndex(chainparams.GetConsensus());
+
+    // Write changes periodically to disk, after relay.
+    if (!FlushStateToDisk(chainparams, state, FlushStateMode::PERIODIC)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool HandlePosKblock (CValidationState &state, const CChainParams& chainparams,
+                    const CBlockIndex *pindexKblock)
+{
+    return g_chainstate.HandlePosKblock(state, chainparams, pindexKblock);
+}
+
 std::string CBlockFileInfo::ToString() const
 {
     return strprintf("CBlockFileInfo(blocks=%u, size=%u, heights=%u...%u, time=%s...%s)", nBlocks, nSize, nHeightFirst, nHeightLast, FormatISO8601Date(nTimeFirst), FormatISO8601Date(nTimeLast));
@@ -4862,3 +5061,4 @@ public:
         mapBlockIndex.clear();
     }
 } instance_of_cmaincleanup;
+

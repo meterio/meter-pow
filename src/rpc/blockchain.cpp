@@ -2179,6 +2179,66 @@ UniValue scantxoutset(const JSONRPCRequest& request)
     return result;
 }
 
+static UniValue submitposkblock(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+            "submitposkblock \"hexdata\"\n"
+            "\nAllign POW mining to start point.\n"
+            "\nArguments:\n"
+            "1. \"hexdata\"        (string, required) the hex-encoded POW kblock data to submit\n"
+            "2. \"hexdata\"        (string, required) the hex-encoded POS kblock data to submit\n"
+            "\nResult:\n"
+            "\nExamples:\n"
+            + HelpExampleCli("submitposkblock", "\"mykblockhex\"")
+            + HelpExampleRpc("submitposkblock", "\"mykblockhex\"")
+        );
+
+    std::shared_ptr<CBlock> blockptr = std::make_shared<CBlock>();
+    CBlock& block = *blockptr;
+    const CBlockIndex* pindex;
+    // std::shared_ptr<const CBlockIndex> pindex;
+
+    if (!DecodeHexBlk(block, request.params[0].get_str())) {
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
+    }
+
+    if (block.vtx.empty() || !block.vtx[0]->IsCoinBase()) {
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block does not start with a coinbase");
+    }
+
+    //POS kblock validation
+    std::string posBlock = request.params[1].get_str();
+    std::cout << "received posBlock: " << posBlock << std::endl;
+    //XXX: TBD  POS Kblock
+    /*
+     * 1. decode Kblock
+     * 2. pow block must be the first of kblock data
+     * 3. kblock signer validation
+     * 4. BLS signature validation
+     * 
+     * save this kblock associate with pow height.
+     */
+
+    // check the block index  must be in map wether it is on active chain.
+    uint256 hash = block.GetHash();
+    {
+        LOCK(cs_main);
+        pindex = LookupBlockIndex(hash);
+        if (!pindex) {
+            return (strprintf("block '%s' is not in powDB", hash.ToString()));
+        }
+    }
+    CValidationState state;
+    bool ret = HandlePosKblock(state, Params(), pindex);
+
+    if (ret) {
+        return (strprintf("handle pos kblock '%s' height '%d' successfully", hash.ToString(), pindex->nHeight));
+    } else {
+        return (strprintf("handles kblock '%s' height '%d' failed", hash.ToString(), pindex->nHeight));
+    }
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -2213,6 +2273,7 @@ static const CRPCCommand commands[] =
     { "hidden",             "waitforblock",           &waitforblock,           {"blockhash","timeout"} },
     { "hidden",             "waitforblockheight",     &waitforblockheight,     {"height","timeout"} },
     { "hidden",             "syncwithvalidationinterfacequeue", &syncwithvalidationinterfacequeue, {} },
+    { "hidden",             "submitposkblock",        &submitposkblock,        {"hexdata", "hexdata"} },
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &t)

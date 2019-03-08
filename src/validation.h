@@ -500,4 +500,8 @@ inline bool IsBlockPruned(const CBlockIndex* pblockindex)
     return (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0);
 }
 
+// handle kblock from POS by submitposkblock. The mining start point must be kblock.
+bool HandlePosKblock (CValidationState &state, const CChainParams& chainparams,
+        const CBlockIndex *pindexKblock);
+
 #endif // BITCOIN_VALIDATION_H
