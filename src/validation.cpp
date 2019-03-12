@@ -1200,8 +1200,8 @@ bool IsInitialBlockDownload()
     if (chainActive.Tip() == nullptr)
         return true;
     // comment out for low difficaulty mining
-    //if (chainActive.Tip()->nChainWork < nMinimumChainWork)
-    //    return true;
+    if (chainActive.Tip()->nChainWork < nMinimumChainWork)
+        return true;
     if (!fSkipIBD && (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge)))
         return true;
 
@@ -3090,6 +3090,42 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
+// check for scriptSig must be suite for meter project
+// scriptSig contains 4 segments: 
+// encoded Height (vaired length) + Seqence (4 bytes) + TimeStamp (8 bytes) + Beneficiary str(40 bytes)  
+#define SCRIPTSIG_SEQ_LEN           0x04
+#define SCRIPTSIG_TIMESTAMP_LEN     0x08
+#define SCRIPTSIG_BENEFICIARY_LEN   0x28  // POS address is 20 bytes
+static bool CoinbaseScriptSigCheck(char *scriptSigBytes, const int length)
+{
+    int i = 0, pos = 0;
+    uint8_t len = 0;
+    
+    while (pos < length) {
+        len = scriptSigBytes[pos];
+        switch (i) {
+            case 0: // height 
+                if ((len > 4) || (len == 0)) return false;
+                break;
+            case 1: //sequence
+                if (len != SCRIPTSIG_SEQ_LEN) return false;
+                break;
+            case 2: // time stamp
+                if (len != SCRIPTSIG_TIMESTAMP_LEN) return false;
+                break;
+            case 3: // beneficairy
+                if (len != SCRIPTSIG_BENEFICIARY_LEN) return false;
+                break;
+            default:
+                return false;
+        }
+        // include byte "len" also
+        pos += (len + 1);
+        i ++;
+    }
+    return true;
+}
+
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
@@ -3141,6 +3177,19 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
+
+    // coinbase Tx scriptSig MUST contain beneficiary
+    CScript scriptSig = block.vtx[0]->vin[0].scriptSig;
+    CDataStream ss(SER_DISK, PROTOCOL_VERSION);
+    ss << scriptSig;
+    char *scriptSigBytes = new char[ss.size()];
+    ss.read(scriptSigBytes, (const int)ss.size());
+
+    if (!CoinbaseScriptSigCheck(scriptSigBytes, ss.size())) {
+        delete scriptSigBytes;
+        return state.DoS(100, false, REJECT_INVALID, "bad-cb-scriptSig-invalid", false, "coinbase scriptSig invalid");
+    }
+    delete scriptSigBytes;
 
     // Check transactions
     for (const auto& tx : block.vtx)
