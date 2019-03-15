@@ -58,6 +58,10 @@ struct Params {
     int BIP65Height;
     /** Block height at which BIP66 becomes active */
     int BIP66Height;
+
+    /** Limit BITCOIN_MAX_FUTURE_BLOCK_TIME **/
+    int64_t BTCMaxFutureBlockTime;
+
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
@@ -75,6 +79,24 @@ struct Params {
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
+
+    // Params for Zawy's LWMA difficulty adjustment algorithm.
+    int64_t nZawyLwmaAveragingWindow;
+    int64_t nZawyLwmaAdjustedWeight;  // k = (N+1)/2 * 0.998 * T
+    int64_t nZawyLwmaMinDenominator;
+    bool bZawyLwmaSolvetimeLimitation;
+
+    // Legacy params for Zawy's LWMA before the PoW fork. Only used by testnet
+    int64_t nZawyLwmaAdjustedWeightLegacy;  // k = (N+1)/2 * 0.9989^(500/N) * T
+    int64_t nZawyLwmaMinDenominatorLegacy;
+
+    int64_t ZawyLwmaAdjustedWeight(int height) const {
+        return (nZawyLwmaAdjustedWeight);
+    }
+    int64_t ZawyLwmaMinDenominator(int height) const {
+        return (nZawyLwmaMinDenominator);
+    }
+
 };
 } // namespace Consensus
 
