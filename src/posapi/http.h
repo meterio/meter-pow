@@ -18,7 +18,7 @@ static void http_request_done(struct evhttp_request *req, void *arg){
 
 static int http_send_pos(std::string *string){
     struct event_base *base;
-    struct evhttp_connection *conn;
+    struct evhttp_connection *conn = NULL;
     struct evhttp_request *req;
 
     base = event_base_new();
@@ -37,6 +37,9 @@ static int http_send_pos(std::string *string){
     evhttp_connection_set_timeout(req->evcon, 600);
     event_base_dispatch(base);
 
+    if (conn != NULL) {
+        evhttp_connection_free(conn);
+    }
     return 0;
 }
 
