@@ -93,7 +93,7 @@ public:
         consensus.nZawyLwmaMinDenominatorLegacy = 10;
         consensus.nZawyLwmaMinDenominator = 10;
         consensus.bZawyLwmaSolvetimeLimitation = true;
-        consensus.BTCMaxFutureBlockTime = 12 * 10 * 60; // 120 mins
+        consensus.BTCMaxFutureBlockTime = 12 * 2 * 60; // 24 mins
 
         consensus.nPowTargetTimespan = 1 * 60 * 60; // one hour adjustment time
         consensus.nPowTargetSpacing = 2 * 60; // two minute block time
@@ -202,7 +202,7 @@ public:
         consensus.BTCMaxFutureBlockTime = 7 * 10 * 60; // 70 mins
 
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        consensus.nPowTargetSpacing = 10 * 60;
+        consensus.nPowTargetSpacing = 2 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -300,7 +300,7 @@ public:
         consensus.BTCMaxFutureBlockTime = 7 * 10 * 60; // 70 mins
 
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        consensus.nPowTargetSpacing = 10 * 60;
+        consensus.nPowTargetSpacing = 2 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
