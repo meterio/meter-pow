@@ -86,8 +86,10 @@ public:
         // nPowTargetTimespan / nPowTargetSpacing = 30 blocks per adjustment 
 
         consensus.nZawyLwmaAveragingWindow = 45;
-        consensus.nZawyLwmaAdjustedWeightLegacy = 13772;
-        consensus.nZawyLwmaAdjustedWeight = 13772;
+
+        //TBD. change block time to 2mins. (13772/5) Why changing nPowTargetSpacing is not enough?
+        consensus.nZawyLwmaAdjustedWeightLegacy = 2754; //13772;
+        consensus.nZawyLwmaAdjustedWeight = 2754; //13772;
         consensus.nZawyLwmaMinDenominatorLegacy = 10;
         consensus.nZawyLwmaMinDenominator = 10;
         consensus.bZawyLwmaSolvetimeLimitation = true;
