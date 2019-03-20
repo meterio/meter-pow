@@ -15,8 +15,18 @@ FROM ubuntu:18.04
 COPY --from=builder /btcpow/src/bitcoind /usr/local/bin/
 COPY --from=builder /btcpow/src/bitcoin-cli /usr/local/bin/
 COPY --from=builder /btcpow/src/bitcoin-tx /usr/local/bin/
-COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/
-COPY --from=builder /usr/lib/libdb_cxx-4.8.so /usr/lib/
+
+COPY --from=builder /usr/lib/libboost*.so* /usr/lib/
+COPY --from=builder /usr/lib/libssl*.so* /usr/lib/
+COPY --from=builder /usr/lib/libevent*.so* /usr/lib/
+COPY --from=builder /usr/lib/libdb*.so* /usr/lib/
+COPY --from=builder /usr/lib/libcrypto*.so* /usr/lib/
+COPY --from=builder /usr/lib/libminiupnpc*.so* /usr/lib/
+COPY --from=builder /usr/lib/libzmq*.so* /usr/lib/
+COPY --from=builder /usr/lib/libstdc++*.so* /usr/lib/
+COPY --from=builder /usr/lib/libsodium*.so* /usr/lib/
+COPY --from=builder /usr/lib/libpgm*.so* /usr/lib/
+COPY --from=builder /usr/lib/libnorm*.so* /usr/lib/
 
 RUN mkdir /data
 COPY bitcoin.conf /data/bitcoin.conf
