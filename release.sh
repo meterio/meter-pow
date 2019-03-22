@@ -1,15 +1,15 @@
 #!/bin/bash
-PROJECT_NAME=pow
+PROJECT_NAME=meter-pow
 VERSION=1.0
 
-DOCKER_TAG=dfinlab/pow:$VERSION
+DOCKER_TAG=dfinlab/${PROJECT_NAME}:$VERSION
 GIT_TAG=v$VERSION
 TEMP_CONTAINER_NAME=${PROJECT_NAME}-temp
 RELEASE_DIR=release/${PROJECT_NAME}-$VERSION-linux-amd64
 RELEASE_TARBALL=${PROJECT_NAME}-$VERSION-linux-amd64.tar.gz
 DEPENDENCY_TARBALL=${PROJECT_NAME}-$VERSION-linux-amd64-dependency.tar.gz
 
-# docker build -t $DOCKER_TAG .
+docker build -t $DOCKER_TAG .
 docker run -d --name $TEMP_CONTAINER_NAME $DOCKER_TAG
 echo "Brought up a temporary docker container"
 mkdir -p $RELEASE_DIR/bin
@@ -26,8 +26,7 @@ cd $RELEASE_DIR/lib && rm -R -- */ && tar -zcf ../$DEPENDENCY_TARBALL . && cd -
 cp $RELEASE_DIR/$RELEASE_TARBALL release
 cp $RELEASE_DIR/$DEPENDENCY_TARBALL release
 
-
-# rm -rf $RELEASE_DIR
+rm -rf $RELEASE_DIR
 
 github-release release --user dfinlab --repo btcpow \
     --tag ${GIT_TAG} --name "${GIT_TAG}" --pre-release
