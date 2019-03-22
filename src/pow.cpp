@@ -16,7 +16,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     int nHeight = pindexLast->nHeight + 1;
 
     // initial window using the fixed value
-    if (nHeight < params.nZawyLwmaAveragingWindow) {
+    if (nHeight <= params.nZawyLwmaAveragingWindow) {
         // PoW limit for initial period.
         unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
         return nProofOfWorkLimit;
