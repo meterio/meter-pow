@@ -1,4 +1,4 @@
-FROM dfinlab/pow-build as builder
+FROM dfinlab/build-env as builder
 
 WORKDIR /btcpow
 COPY . .
