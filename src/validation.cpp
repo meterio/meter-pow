@@ -3100,7 +3100,13 @@ static bool CoinbaseScriptSigCheck(char *scriptSigBytes, const int length)
 {
     int i = 0, pos = 0;
     uint8_t len = 0;
-    
+    uint8_t tLen = (uint8_t)scriptSigBytes[0];  //this is total length
+
+    //script total length
+    if (length != (tLen + 1)) return false;
+
+    // move to 1st byte, height segment
+    pos = 1;
     while (pos < length) {
         len = scriptSigBytes[pos];
         switch (i) {
@@ -3182,10 +3188,13 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     CScript scriptSig = block.vtx[0]->vin[0].scriptSig;
     CDataStream ss(SER_DISK, PROTOCOL_VERSION);
     ss << scriptSig;
-    char *scriptSigBytes = new char[ss.size()];
-    ss.read(scriptSigBytes, (const int)ss.size());
+    int scriptSigLen = ss.size();
+    char *scriptSigBytes = new char[scriptSigLen];
+    ss.read(scriptSigBytes, (const int)scriptSigLen);
 
-    if (!CoinbaseScriptSigCheck(scriptSigBytes, ss.size())) {
+    // skip Gensis
+    if (block.hashMerkleRoot != uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b") && 
+        !CoinbaseScriptSigCheck(scriptSigBytes, scriptSigLen)) {
         delete scriptSigBytes;
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-scriptSig-invalid", false, "coinbase scriptSig invalid");
     }
@@ -3354,6 +3363,21 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         }
     }
 
+    // coinbase Tx scriptSig MUST contain beneficiary
+    CScript scriptSig = block.vtx[0]->vin[0].scriptSig;
+    CDataStream ss(SER_DISK, PROTOCOL_VERSION);
+    ss << scriptSig;
+    int scriptSigLen = ss.size();
+    char *scriptSigBytes = new char[scriptSigLen];
+    ss.read(scriptSigBytes, (const int)scriptSigLen);
+
+    if (nHeight != 0 && !CoinbaseScriptSigCheck(scriptSigBytes, scriptSigLen)) {
+        delete scriptSigBytes;
+        return state.DoS(100, false, REJECT_INVALID, "bad-scriptSig-invalid", false, "coinbase scriptSig invalid");
+    }
+    delete scriptSigBytes;
+    
+/**** No need this any more. replaced by own check
     // Enforce rule that the coinbase starts with serialized block height
     if (nHeight >= consensusParams.BIP34Height)
     {
@@ -3363,6 +3387,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-height", false, "block height mismatch in coinbase");
         }
     }
+****/
 
     // Validation for witness commitments.
     // * We compute the witness hash (which is the hash including witnesses) of all the block's transactions, except the
