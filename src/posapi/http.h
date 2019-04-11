@@ -37,9 +37,8 @@ static int http_send_pos(std::string *string){
     evhttp_connection_set_timeout(req->evcon, 600);
     event_base_dispatch(base);
 
-    if (conn != NULL) {
-        evhttp_connection_free(conn);
-    }
+    if (conn != NULL) evhttp_connection_free(conn);
+    if (base != NULL) event_base_free(base);
     return 0;
 }
 
