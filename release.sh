@@ -3,6 +3,7 @@ PROJECT_NAME=meter-pow
 VERSION=1.1
 
 DOCKER_TAG=dfinlab/${PROJECT_NAME}:$VERSION
+LATEST_TAG=dfinlab/${PROJECT_NAME}:latest
 GIT_TAG=v$VERSION
 TEMP_CONTAINER_NAME=${PROJECT_NAME}-temp
 RELEASE_DIR=release/${PROJECT_NAME}-$VERSION-linux-amd64
@@ -10,6 +11,7 @@ RELEASE_TARBALL=${PROJECT_NAME}-$VERSION-linux-amd64.tar.gz
 DEPENDENCY_TARBALL=${PROJECT_NAME}-$VERSION-linux-amd64-dependency.tar.gz
 
 docker build -t $DOCKER_TAG .
+docker tag $DOCKER_TAG $LATEST_TAG
 docker run -d --name $TEMP_CONTAINER_NAME $DOCKER_TAG
 echo "Brought up a temporary docker container"
 mkdir -p $RELEASE_DIR/bin
