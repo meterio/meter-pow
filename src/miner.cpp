@@ -159,7 +159,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+
+    std::vector<unsigned char> height = {0xde, 0, 0xad};
+    std::vector<unsigned char> sequence = {0xde, 0 , 0, 0xad};
+    std::vector<unsigned char> timestamp = {0xde, 0, 0, 0, 0, 0, 0, 0xad};
+    std::vector<unsigned char> beneficiary = {0xbe, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0xef};
+    coinbaseTx.vin[0].scriptSig = CScript() << height << sequence << timestamp << beneficiary;
+
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
     pblocktemplate->vTxFees[0] = -nFees;
