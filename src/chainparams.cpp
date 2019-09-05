@@ -85,7 +85,7 @@ public:
         // one hour (in seconds)
         // nPowTargetTimespan / nPowTargetSpacing = 30 blocks per adjustment 
 
-        consensus.nZawyLwmaAveragingWindow = 45;
+        consensus.nZawyLwmaAveragingWindow = 120;
 
         //TBD. change block time to 2mins. (13772/5) Why changing nPowTargetSpacing is not enough?
         consensus.nZawyLwmaAdjustedWeightLegacy = 2754; //13772;
@@ -96,7 +96,7 @@ public:
         consensus.BTCMaxFutureBlockTime = 12 * 2 * 60; // 24 mins
 
         consensus.nPowTargetTimespan = 1 * 60 * 60; // one hour adjustment time
-        consensus.nPowTargetSpacing = 2 * 60; // two minute block time
+        consensus.nPowTargetSpacing = 1 * 60; // one minute block time
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -193,7 +193,7 @@ public:
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
         // adjust slide window
-        consensus.nZawyLwmaAveragingWindow = 45;
+        consensus.nZawyLwmaAveragingWindow = 120;
         consensus.nZawyLwmaAdjustedWeightLegacy = 13632;
         consensus.nZawyLwmaAdjustedWeight = 13772;
         consensus.nZawyLwmaMinDenominatorLegacy = 3;
@@ -202,7 +202,7 @@ public:
         consensus.BTCMaxFutureBlockTime = 7 * 10 * 60; // 70 mins
 
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        consensus.nPowTargetSpacing = 2 * 60;
+        consensus.nPowTargetSpacing = 1 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -291,7 +291,7 @@ public:
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
 
-        consensus.nZawyLwmaAveragingWindow = 45;
+        consensus.nZawyLwmaAveragingWindow = 120;
         consensus.nZawyLwmaAdjustedWeightLegacy = 13772;
         consensus.nZawyLwmaAdjustedWeight = 13772;
         consensus.nZawyLwmaMinDenominatorLegacy = 10;
@@ -300,7 +300,7 @@ public:
         consensus.BTCMaxFutureBlockTime = 7 * 10 * 60; // 70 mins
 
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        consensus.nPowTargetSpacing = 2 * 60;
+        consensus.nPowTargetSpacing = 1 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
