@@ -22,7 +22,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return nProofOfWorkLimit;
     }
 
-    return LwmaCalculateNextWorkRequired(pindexLast, params);
+    return Lwma3CalculateNextWorkRequired(pindexLast, params);
 }
 
 // LWMA-1 for BTC/Zcash clones
