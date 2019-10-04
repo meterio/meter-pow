@@ -1,6 +1,6 @@
 #!/bin/bash
 PROJECT_NAME=meter-pow
-VERSION=1.1.3
+VERSION=1.1.4
 
 DOCKER_TAG=dfinlab/${PROJECT_NAME}:$VERSION
 LATEST_TAG=dfinlab/${PROJECT_NAME}:latest
