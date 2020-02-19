@@ -192,7 +192,7 @@ public:
     void UnloadBlockIndex();
 
     bool HandlePosKblock(CValidationState &state, const CChainParams& chainparams,
-        const CBlockIndex *pindexKblock);
+        CBlockIndex *pindexKblock);
 
 private:
     bool ActivateBestChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace);
@@ -225,6 +225,7 @@ CCriticalSection cs_main;
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
 CChain& chainActive = g_chainstate.chainActive;
 CBlockIndex *pindexBestHeader = nullptr;
+CBlockIndex *pindexLastKBlockHeader = nullptr;
 CWaitableCriticalSection g_best_block_mutex;
 CConditionVariable g_best_block_cv;
 uint256 g_best_block;
@@ -3490,6 +3491,11 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
                 }
             }
         }
+
+        if (pindexLastKBlockHeader && 
+            (pindexPrev->GetAncestor(pindexLastKBlockHeader->nHeight) != pindexLastKBlockHeader)) {
+            return state.DoS(100, error("%s: prev block is not decendant of lastKBlock", __func__), REJECT_INVALID, "not-decandant-of-last-kblock"); 
+        } 
     }
     if (pindex == nullptr)
         pindex = AddToBlockIndex(block);
@@ -4843,9 +4849,12 @@ bool CChainState::ActivatePosKblockChainStep(CValidationState& state, const CCha
 // kblock is starting pooint of mining and overrides everything
 //
 bool CChainState::HandlePosKblock(CValidationState &state, const CChainParams& chainparams, 
-        const CBlockIndex *pindexKblock) {
+        CBlockIndex *pindexKblock) {
     // this routine is alway called by RPC, will be called by processNewbock maybe
     AssertLockNotHeld(cs_main);
+
+    // update the lastKblock ptr
+    pindexLastKBlockHeader = pindexKblock;
 
     // clean up setBlockIndexCandidates
     PruneBlockIndexCandidates();
@@ -4942,7 +4951,7 @@ bool CChainState::HandlePosKblock(CValidationState &state, const CChainParams& c
 }
 
 bool HandlePosKblock (CValidationState &state, const CChainParams& chainparams,
-                    const CBlockIndex *pindexKblock)
+                    CBlockIndex *pindexKblock)
 {
     return g_chainstate.HandlePosKblock(state, chainparams, pindexKblock);
 }

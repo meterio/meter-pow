@@ -2196,8 +2196,7 @@ static UniValue submitposkblock(const JSONRPCRequest& request)
 
     std::shared_ptr<CBlock> blockptr = std::make_shared<CBlock>();
     CBlock& block = *blockptr;
-    const CBlockIndex* pindex;
-    // std::shared_ptr<const CBlockIndex> pindex;
+    CBlockIndex* pindex;
 
     if (!DecodeHexBlk(block, request.params[0].get_str())) {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
@@ -2208,8 +2207,10 @@ static UniValue submitposkblock(const JSONRPCRequest& request)
     }
 
     //POS kblock validation
+    std::cout << "received powBlock: " << block.ToString() << std::endl;
     std::string posBlock = request.params[1].get_str();
     std::cout << "received posBlock: " << posBlock << std::endl;
+
     //XXX: TBD  POS Kblock
     /*
      * 1. decode Kblock
@@ -2229,6 +2230,8 @@ static UniValue submitposkblock(const JSONRPCRequest& request)
             return (strprintf("block '%s' is not in powDB", hash.ToString()));
         }
     }
+    std::cout << "pindex of KBlock: " << pindex->ToString() << std::endl;
+
     CValidationState state;
     bool ret = HandlePosKblock(state, Params(), pindex);
 
