@@ -130,10 +130,10 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0xfa;
-        pchMessageStart[1] = 0xfb;
-        pchMessageStart[2] = 0xbf;
-        pchMessageStart[3] = 0x14;
+        pchMessageStart[0] = 0x76;
+        pchMessageStart[1] = 0x01;
+        pchMessageStart[2] = 0x04;
+        pchMessageStart[3] = 0x03;
         nDefaultPort = 9209;
         nPruneAfterHeight = 100000;
 
