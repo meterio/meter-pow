@@ -3131,6 +3131,11 @@ static bool CoinbaseScriptSigCheck(char *scriptSigBytes, const int length)
         // include byte "len" also
         pos += (len + 1);
         i ++;
+
+        // do not check the optional scripts, such as pooltag
+        if (i >=4) {
+            break;
+        } 
     }
     return true;
 }
