@@ -9,6 +9,12 @@
 
 static void http_request_done(struct evhttp_request *req, void *arg){
     char buf[1024];
+
+    // req is null when there is timeout
+    if (req == NULL) {
+        printf("request is null, maybe timeout\n");
+        return;
+    }
     int s = evbuffer_remove(req->input_buffer, &buf, sizeof(buf) - 1);
     buf[s] = '\0';
     printf("%s", buf);
