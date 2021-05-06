@@ -40,8 +40,10 @@ static int http_send_pos(std::string *string){
     std::string endpoint = "/pow";
 
     evhttp_make_request(conn, req, EVHTTP_REQ_POST, endpoint.c_str());
-    evhttp_connection_set_timeout(req->evcon, 600);
-    event_base_dispatch(base);
+    if (req && req->evcon) {
+        evhttp_connection_set_timeout(req->evcon, 600);
+        event_base_dispatch(base);
+    }
 
     if (conn != NULL) evhttp_connection_free(conn);
     if (base != NULL) event_base_free(base);
