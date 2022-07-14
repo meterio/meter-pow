@@ -47,6 +47,8 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
 
 #include "posapi/http.h"
 

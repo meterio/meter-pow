@@ -26,6 +26,8 @@
 #include <event2/util.h>
 #include <event2/event.h>
 #include <event2/thread.h>
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
 
 /** Default control port */
 const std::string DEFAULT_TOR_CONTROL = "127.0.0.1:9051";
